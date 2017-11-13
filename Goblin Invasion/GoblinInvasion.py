@@ -1,5 +1,7 @@
 '''
-Check *args and **kwards for button implementation
+This is one of my first Python projects. I have used Pygame to create a simple game where you have to fight
+off an invasion of goblins. The aim of the game is to progressively get harder, while leveling up and skilling
+up your warrior, and eventually see how far you can make it.
 '''
 import sys
 import pygame				#Importing pygame modules
@@ -323,9 +325,9 @@ def game_loop():
 	gob_count = 1
 	gob_health = gob_maxHealth
 	gob_attackSpeed = 2
-	gob_dmg = 2
+	gob_dmg = 5
 	warriorSpeed = 4						#Speed of warrior
-	attack_dmg = 5							#Damage of Warrior
+	attack_dmg = 3						#Damage of Warrior
 	attack_crit = 50						#Critical strike chance
 	attack_speed = 1
 	experience = 0
