@@ -1,3 +1,6 @@
+'''
+Check *args and **kwards for button implementation
+'''
 import sys
 import pygame				#Importing pygame modules
 import time					#Importing time module
@@ -26,10 +29,10 @@ levelImg = pygame.image.load("Level11.png")			#Map Img
 level1_width = 2011									#Level1 img pixel dimensions
 level1_height = 1944
 warrior_level = 1
-global warrior_maxHealth
-warrior_maxHealth = 100
 global used_points
 used_points = 0
+global warrior_maxHealth
+warrior_maxHealth = 100
 health_statImg = pygame.image.load('health_stat.png')
 
 class Rectangle(pygame.sprite.Sprite):
@@ -53,21 +56,24 @@ def goblin(startx,starty):
 def text_objects(text, font):
 	textSurface = font.render(str(text), True, black)
 	return textSurface, textSurface.get_rect()
+
+def text_objects_red(text, font):
+	textSurface = font.render(str(text), True, red, white)
+	return textSurface, textSurface.get_rect()
 	
-def button(msg,x,y,w,h,ic,ac,butt=False):       #Button creation
+def button(msg,x,y,w,h,ic,ac,butt=False, *args, **kwargs):       #Button creation
 	mouse = pygame.mouse.get_pos()            #Mouse position
 	#print(mouse)       
 	click = pygame.mouse.get_pressed()        #Mouse click
 	#print(click)
-	
 	if x+w > mouse[0] > x and y+h > mouse[1] > y:
 		pygame.draw.rect(window, ac, (x,y,w,h))		#Button creation
 		if click[0] == 1 and butt != False:
-			butt()
+			butt(*args,**kwargs)
 	else:
 		pygame.draw.rect(window, ic, (x,y,w,h))
 		
-	smallText = pygame.font.Font('freesansbold.ttf', 30)
+	smallText = pygame.font.Font('freesansbold.ttf', 40)
 	textSurf, textRect = text_objects(msg, smallText)
 	textRect.center = ((x+(w/2)), (y+(h/2)))
 	window.blit(textSurf, textRect)	
@@ -81,7 +87,7 @@ def game_intro():
 				quit()
 		window.fill(white)
 		largeText = pygame.font.Font('freesansbold.ttf', 115)
-		TextSurf, TextRect = text_objects('RuneScape 2', largeText)
+		TextSurf, TextRect = text_objects('Goblin Invasion', largeText)
 		TextRect.center = (500,300)
 		window.blit(TextSurf, TextRect)
 		button('Play!',300,490,100,50,brown,red,game_loop)
@@ -97,12 +103,14 @@ def stats_text(count,x,y):
 	
 def stat_health():
 	global warrior_maxHealth
-	warrior_maxHealth = warrior_maxHealth + 10
+	warrior_maxHealth = warrior_maxHealth + 10	
 	global stats
 	stats = False
 	global used_points
 	used_points += 1
+	print(warrior_maxHealth)
 	return warrior_maxHealth
+		
 	
 def stats_selection(stat_points, warrior_maxHealth, attack_dmg, attack_speed, attack_crit):
 	global stats
@@ -152,10 +160,10 @@ def message_display(text):
 	TextRect.center = (500,400)
 	window.blit(TextSurf, TextRect)
 	
-def damage_text(dmg_caused):
-	damageText = pygame.font.Font('freesansbold.ttf', 80)
-	TextSurf, TextRect = text_objects(dmg_caused, damageText)
-	TextRect.center = (610,705)
+def damage_text(dmg_caused, gobStartx, gobStarty):
+	damageText = pygame.font.Font('freesansbold.ttf', 30)
+	TextSurf, TextRect = text_objects_red(dmg_caused, damageText)
+	TextRect.center = (gobStartx + 60,gobStarty + 30)
 	window.blit(TextSurf, TextRect)	
 
 def level_upTxt(text):
@@ -167,9 +175,9 @@ def level_upTxt(text):
 def game_over():
 	message_display('GAME OVER!')		
 	
-def health_bar(x):											#Health bar - pass in warrior_health
+def health_bar(health):											#Health bar - pass in warrior_health
 	pygame.draw.rect(window, black, (80,670,300,60), 5)	
-	health = x
+	health = health/warrior_maxHealth*100
 	if health <= 100 and health >90:
 		pygame.draw.rect(window, red, (82,672,296,56))
 	elif health <= 90 and health > 80:
@@ -267,8 +275,7 @@ def experience_bar(x,z):
 	elif exp >= exp_level*0.9 and exp < exp_level:				
 		pygame.draw.rect(window, exp_yellow, (182,762,536,16))	#9/10 exp	
 		
-def level_up(x):
-	exp = x
+def level_up(exp):
 	warrior_level = 1
 	level_2 = 10
 	level_3 = 30
@@ -288,9 +295,9 @@ def level_up(x):
 	level_upTxt(warrior_level)	
 	return (warrior_level, level_2)
 	
-def dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused):	
+def dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused, gobStartx, gobStarty):	
 	if dmg_txt == True:
-		damage_text(dmg_caused)
+		damage_text(dmg_caused,gobStartx,gobStarty)
 		if game_time - dmgTxt_Start >= 1:
 			dmg_txt = False
 			dmgTxt_Start = game_time
@@ -313,20 +320,18 @@ def game_loop():
 	goby = 0
 	gobSpeed = 1							#Speed of goblin
 	gob_maxHealth = 10
+	gob_count = 1
 	gob_health = gob_maxHealth
 	gob_attackSpeed = 2
 	gob_dmg = 2
-	
-	#warrior_maxHealth = 100
-	#warrior_maxHealth = warrior_maxHealth + stat_health()
-	warrior_health = warrior_maxHealth
 	warriorSpeed = 4						#Speed of warrior
-	attack_dmg = 2							#Damage of Warrior
+	attack_dmg = 5							#Damage of Warrior
 	attack_crit = 50						#Critical strike chance
 	attack_speed = 1
 	experience = 0
 	dmg_caused = 0
-	
+	warrior_health = 100
+	old_points = 0
 	warriorImg = pygame.image.load('Warrior3.png')			#Loads Image
 	img_left = pygame.transform.rotate(warriorImg, 270)
 	img_right = pygame.transform.rotate(warriorImg, 90)		#Rotating image to face dircetion
@@ -338,14 +343,16 @@ def game_loop():
 	dmg_txt = False
 	
 	while mainLoop:			                   #Main game loop
+		spawn_location1 = (level1x+1900,level1y+850)
+		spawn_location2 = (level1x+500,level1y+0)
+		spawn_locs = [spawn_location1,spawn_location2]
 		game_time = pygame.time.get_ticks() /1000			#Actual game time in seconds
 		#print (game_time)
-		dmg = dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused)
+		dmg = dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused, gobStartx, gobStarty)
 		dmg_txt = dmg[0]
 		dmgTxt_Start = dmg[1]
-		
-		print (warrior_maxHealth)	
-		
+		print ("Max: " + str(warrior_maxHealth))	
+		print(warrior_health)
 		for event in pygame.event.get():	#Quit command
 			if event.type == pygame.QUIT:			
 				pygame.quit()
@@ -397,7 +404,7 @@ def game_loop():
 							start_ticks = game_time
 							dmg_caused = attack_dmg
 							dmg_txt = True
-							
+
 				if event.key == pygame.K_q:
 					stats_selection(stat_points, warrior_maxHealth, attack_dmg, attack_speed, attack_crit)
 				
@@ -409,10 +416,11 @@ def game_loop():
 					yCord = 0
 					goby = 0
 						
-		#print (level1y)
+		# print (level1y)
+		# print (level1x)
 		warrior_level = level_up(experience)
 		stat_points = warrior_level[0] - used_points - 1
-		
+
 		level1x += xCord				 	#Scrolling the map
 		level1y += yCord					
 		gobStartx += gobx
@@ -446,11 +454,43 @@ def game_loop():
 		wall14 = Rectangle(green, 50, 240)			
 		wall14.set_position(level1x+575,level1y+590)#Right
 		wall15= Rectangle(white, 80, 50)			
-		wall15.set_position(level1x+575,level1y+830)	#Top
+		wall15.set_position(level1x+575,level1y+830)#Top
 		wall16 = Rectangle(green, 50, 90)			
 		wall16.set_position(level1x+610,level1y+840)#Right
 		wall17 = Rectangle(red, 125, 50)	
 		wall17.set_position(level1x+520,level1y+900)#Bottom
+		wall18 = Rectangle(white, 320, 50)			
+		wall18.set_position(level1x+755,level1y+830)#Top
+		wall19 = Rectangle(green, 50, 140)			
+		wall19.set_position(level1x+1155,level1y+795)#Right
+		wall20 = Rectangle(brown, 50, 90)			
+		wall20.set_position(level1x+745,level1y+840)#Left
+		wall21 = Rectangle(red, 425, 50)	
+		wall21.set_position(level1x+755,level1y+900)#Bottom
+		wall22 = Rectangle(brown, 50, 80)			
+		wall22.set_position(level1x+1065,level1y+795)#Left
+		wall23 = Rectangle(white, 100, 50)			
+		wall23.set_position(level1x+1085,level1y+785)#Top
+		wall24 = Rectangle(red, 100, 50)	
+		wall24.set_position(level1x+1085,level1y+650)#Bottom
+		wall25 = Rectangle(green, 50, 250)			
+		wall25.set_position(level1x+1155,level1y+440)#Right
+		wall26 = Rectangle(green, 50, 80)			
+		wall26.set_position(level1x+1220,level1y+360)#Right
+		wall27 = Rectangle(green, 50, 180)			
+		wall27.set_position(level1x+1300,level1y+180)#Right		
+		wall28 = Rectangle(green, 50, 70)			
+		wall28.set_position(level1x+1155,level1y+110)#Right	
+		wall29 = Rectangle(red, 80, 50)	
+		wall29.set_position(level1x+1170,level1y+400)#Bottom
+		wall30 = Rectangle(red, 80, 50)	
+		wall30.set_position(level1x+1250,level1y+320)#Bottom
+		wall31 = Rectangle(white, 90, 50)			
+		wall31.set_position(level1x+1095,level1y+95)#Top
+		wall32 = Rectangle(white, 130, 50)			
+		wall32.set_position(level1x+1190,level1y+160)#Top
+		wall33 = Rectangle(brown, 50, 80)			
+		wall33.set_position(level1x+1075,level1y+110)#Left
 		
 		player_block = Rectangle(white, 50, 50)		#Player block sprite for collision
 		player_block.set_position((imgx+15), (imgy+10))
@@ -465,10 +505,10 @@ def game_loop():
 		player_sprite = pygame.sprite.Group()
 		enemy_sprite = pygame.sprite.Group()
 		
-		walls_top.add(wall1,wall6,wall10,wall15)		#Adding rectangle sprites to group
-		walls_left.add(wall2,wall4,wall11,wall13)
-		walls_right.add(wall7,wall9,wall14, wall16)
-		walls_bottom.add(wall3,wall8,wall12,wall17)
+		walls_top.add(wall1,wall6,wall10,wall15,wall18,wall23,wall31,wall32)		#Adding rectangle sprites to group
+		walls_left.add(wall2,wall4,wall11,wall13,wall20,wall22,wall33)
+		walls_right.add(wall7,wall9,wall14,wall16,wall19,wall25,wall26,wall27,wall28)
+		walls_bottom.add(wall3,wall8,wall12,wall17,wall21,wall24,wall29,wall30)
 		player_sprite.add(player_block)
 		enemy_sprite.add(goblin_block)
 		
@@ -487,7 +527,6 @@ def game_loop():
 		gob_health_bar(gob_health)
 		experience_bar(experience, warrior_level[0])
 		level_up(experience)
-		dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused)
 		
 		if level1x <= -1470:					
 			level1x = -1470					#Map border
@@ -551,13 +590,14 @@ def game_loop():
 			elif gobStarty < imgy:
 				gobStarty += gobSpeed
 		else: 
-			gobStartx = random.randrange(0,screen_width)	#Respawn location of goblin
-			gobStarty = random.randrange(0, screen_height)
+			chosen_loc = random.choice(spawn_locs)
+			gobStartx = chosen_loc[0]	#Respawn location of goblin
+			gobStarty = chosen_loc[1]
 			gob_health = gob_maxHealth
 			goblin(gobStartx,gobStarty)
 			experience += 7
-			print (experience)	
-			
+			gob_count += 1
+			#print (experience)	
 		#if gob_health <= 0:
 			#print ('Goblin Dead!')
 			
@@ -566,7 +606,7 @@ def game_loop():
 				warrior_health += -gob_dmg				#Goblin attack 
 				#print (warrior_health)
 				gob_StartTic = game_time
-		
+		dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused, gobStartx, gobStarty)
 		pygame.display.update()			#Updating the loop
 		clock.tick(60)					#FPS
 	
