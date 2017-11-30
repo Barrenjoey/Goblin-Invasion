@@ -3,6 +3,9 @@ This is one of my first Python projects. I have used Pygame to create a simple g
 off an invasion of goblins. The aim of the game is to progressively get harder, while leveling up and skilling
 up your warrior, and eventually see how far you can make it.
 '''
+#Add other stats to increase
+#Make Goblins drop health? or drop randomly
+#Make a level system? or make goblins spawn exponentially
 import sys
 import pygame				#Importing pygame modules
 import time					#Importing time module
@@ -110,9 +113,34 @@ def stat_health():
 	stats = False
 	global used_points
 	used_points += 1
-	print(warrior_maxHealth)
 	return warrior_maxHealth
-		
+
+def stat_damage():
+	global attack_dmg
+	attack_dmg = attack_dmg + 1	
+	global stats
+	stats = False
+	global used_points
+	used_points += 1
+	return attack_dmg	
+	
+def stat_attkSpeed():
+	global attack_speed
+	attack_speed = attack_speed - 0.1
+	global stats
+	stats = False
+	global used_points
+	used_points += 1
+	return attack_speed
+	
+def stat_attkCrit():
+	global attack_crit
+	attack_crit = attack_crit + 1
+	global stats
+	stats = False
+	global used_points
+	used_points += 1
+	return attack_crit		
 	
 def stats_selection(stat_points, warrior_maxHealth, attack_dmg, attack_speed, attack_crit):
 	global stats
@@ -148,10 +176,9 @@ def stats_selection(stat_points, warrior_maxHealth, attack_dmg, attack_speed, at
 		stats_text('+10', 520, 490)
 		if stat_points >= 1:
 			button('+',750,340,20,30,brown,red,stat_health)					#Health
-			
-			button('+',750,390,20,30,brown,red,game_loop)					#Damage
-			button('+',750,440,20,30,brown,red,game_loop)					#Attack Speed
-			button('+',750,490,20,30,brown,red,game_loop)					#Crit Chance
+			button('+',750,390,20,30,brown,red,stat_damage)					#Damage
+			button('+',750,440,20,30,brown,red,stat_attkSpeed)					#Attack Speed
+			button('+',750,490,20,30,brown,red,stat_attkCrit)					#Crit Chance
 		#print (warrior_maxHealth)	
 		pygame.display.update()
 		clock.tick(15)		
@@ -327,9 +354,12 @@ def game_loop():
 	gob_attackSpeed = 2
 	gob_dmg = 5
 	warriorSpeed = 4						#Speed of warrior
-	attack_dmg = 3						#Damage of Warrior
+	global attack_dmg
+	attack_dmg = 3							#Damage of Warrior
+	global attack_crit
 	attack_crit = 50						#Critical strike chance
-	attack_speed = 1
+	global attack_speed
+	attack_speed = 1.0
 	experience = 0
 	dmg_caused = 0
 	warrior_health = 100
@@ -353,8 +383,7 @@ def game_loop():
 		dmg = dmgTxt_display(dmg_txt, game_time, dmgTxt_Start, dmg_caused, gobStartx, gobStarty)
 		dmg_txt = dmg[0]
 		dmgTxt_Start = dmg[1]
-		print ("Max: " + str(warrior_maxHealth))	
-		print(warrior_health)
+
 		for event in pygame.event.get():	#Quit command
 			if event.type == pygame.QUIT:			
 				pygame.quit()
