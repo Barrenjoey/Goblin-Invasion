@@ -1,11 +1,12 @@
 '''
 This is one of my first Python projects. I have used Pygame to create a simple game where you have to fight
 off an invasion of goblins. The aim of the game is to progressively get harder, while leveling up and skilling
-up your warrior, and eventually see how far you can make it.
+up your warrior, and eventually to see how far you can make it. As it is one of my first projects, it has
+turned into a bit of a mess as i just added functionality and features on the go.
 '''
-#Add other stats to increase
-#Make Goblins drop health? or drop randomly
 #Make a level system? or make goblins spawn exponentially
+# Variable attack damage or range
+#
 import sys
 import pygame				#Importing pygame modules
 import time					#Importing time module
@@ -31,6 +32,8 @@ warrior_width = 84									#Dimensions of img
 warrior_height = 82
 goblinImg = pygame.image.load('Goblin1.png')			#Goblin img
 levelImg = pygame.image.load("Level11.png")			#Map Img
+healthDropImg = pygame.image.load('Health_droplet1.png')	#Health droplet image
+health_statImg = pygame.image.load('health_stat.png')
 level1_width = 2011									#Level1 img pixel dimensions
 level1_height = 1944
 warrior_level = 1
@@ -38,7 +41,8 @@ global used_points
 used_points = 0
 global warrior_maxHealth
 warrior_maxHealth = 100
-health_statImg = pygame.image.load('health_stat.png')
+global healthDrops
+healthDrops = []
 
 class Rectangle(pygame.sprite.Sprite):
 	def __init__(self,color,width,height):
@@ -54,6 +58,14 @@ class Rectangle(pygame.sprite.Sprite):
 def quit_game():
 	pygame.quit()		
 	quit()
+
+def healthDrop(level1x,level1y,game_time):
+	start = game_time
+	window.blit(healthDropImg,(level1x,level1y))
+	DropCoOrds = (level1x,level1y,start)
+	global healthDrops
+	healthDrops.append(DropCoOrds)
+	return healthDrops
 	
 def goblin(startx,starty):
 	window.blit(goblinImg,(startx,starty))	
@@ -355,11 +367,11 @@ def game_loop():
 	gob_dmg = 5
 	warriorSpeed = 4						#Speed of warrior
 	global attack_dmg
-	attack_dmg = 3							#Damage of Warrior
+	attack_dmg = 1							#Damage of Warrior
 	global attack_crit
-	attack_crit = 50						#Critical strike chance
+	attack_crit = 10						#Critical strike chance
 	global attack_speed
-	attack_speed = 1.0
+	attack_speed = 1.5
 	experience = 0
 	dmg_caused = 0
 	warrior_health = 100
@@ -373,6 +385,7 @@ def game_loop():
 	gob_StartTic = 0
 	dmgTxt_Start = 0
 	dmg_txt = False
+	healthTimer = 0
 	
 	while mainLoop:			                   #Main game loop
 		spawn_location1 = (level1x+1900,level1y+850)
@@ -535,6 +548,7 @@ def game_loop():
 		walls_bottom = pygame.sprite.Group()
 		player_sprite = pygame.sprite.Group()
 		enemy_sprite = pygame.sprite.Group()
+		health_sprite = pygame.sprite.Group()
 		
 		walls_top.add(wall1,wall6,wall10,wall15,wall18,wall23,wall31,wall32)		#Adding rectangle sprites to group
 		walls_left.add(wall2,wall4,wall11,wall13,wall20,wall22,wall33)
@@ -550,15 +564,25 @@ def game_loop():
 		player_sprite.draw(window)
 		enemy_sprite.draw(window)
 		
-		################################
-							
-		window.blit(levelImg, (level1x,level1y))			#Display level map					
+		##### Bliting majority of things to screen ####
+		window.blit(levelImg, (level1x,level1y))			#Display level map	
+		if len(healthDrops) >= 1:					#Display health droplets with release timer
+			for drop in healthDrops:
+				if game_time > drop[2] + 2:
+					dropLocationx = level1x+480-drop[0]
+					dropLocationy = level1y+390-drop[1]
+					window.blit(healthDropImg,(dropLocationx,dropLocationy))
+					health_block = Rectangle(white, 20, 20)
+					health_block.set_position(dropLocationx,dropLocationy)
+					health_sprite.add(health_block)
+					# print("drop: " + str(dropLocationx))
+					# print("x: " + str(level1x))
 		window.blit(warriorImg, (imgx,imgy))		#Display Img
 		health_bar(warrior_health)
 		gob_health_bar(gob_health)
 		experience_bar(experience, warrior_level[0])
 		level_up(experience)
-		
+
 		if level1x <= -1470:					
 			level1x = -1470					#Map border
 		if level1x >= 350:
@@ -577,7 +601,19 @@ def game_loop():
 		enemy_right = pygame.sprite.spritecollideany(goblin_block, walls_right)
 		enemy_bottom = pygame.sprite.spritecollideany(goblin_block, walls_bottom)
 		enemy_collide = pygame.sprite.spritecollideany(player_block, enemy_sprite)
+		health_collide = pygame.sprite.spritecollide(player_block, health_sprite, True)
 		
+		if len(health_collide) != 0 and game_time > healthTimer + 1:	#Health droplet collision + timer + deletion
+			for index1 in healthDrops:
+				if (index1[0] - level1x) < 70 and (index1[0] - level1x) > -70 and (index1[1] - level1y) < 70 and (index1[1] - level1y) > -70:
+					healthDrops.remove(index1)
+					healthTimer = game_time
+					if warrior_health <= warrior_maxHealth:				#Adding health with collection
+						if warrior_maxHealth - warrior_health < 10:
+							healthDiff = warrior_maxHealth - warrior_health
+							warrior_health += healthDiff
+						else:
+							warrior_health += 10
 		if collide_left != None:					#Collision detection
 			level1x += 5 
 			gobStartx += 5
@@ -590,7 +626,7 @@ def game_loop():
 		if collide_bottom != None:
 			level1y += -5
 			gobStarty += -5	
-			
+		
 		if enemy_left != None:					#Goblin collision detection
 			gobStartx += -1
 		if enemy_top != None:
@@ -621,6 +657,7 @@ def game_loop():
 			elif gobStarty < imgy:
 				gobStarty += gobSpeed
 		else: 
+			healthDrop(level1x,level1y,game_time)
 			chosen_loc = random.choice(spawn_locs)
 			gobStartx = chosen_loc[0]	#Respawn location of goblin
 			gobStarty = chosen_loc[1]
